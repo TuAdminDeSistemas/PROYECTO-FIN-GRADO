@@ -1,0 +1,21 @@
+#Archivo de configuración Prometheus para nodo master que recoge las métricas tanto del pod1 como del pod2.
+global:
+  scrape_interval: 10s
+  evaluation_interval: 10s
+
+scrape_configs:
+  - job_name: 'prometheus-master'
+    scrape_interval: 5s
+    static_configs:
+      - targets: ['localhost:9090', 'prometheus-pod1:9090', 'prometheus-pod2:9090']
+    relabel_configs:
+      - source_labels: [__address__]
+        regex: (.*)
+        target_label: __metrics_path__
+        replacement: /federate?match[]={job="prometheus-master"}
+        
+- job_name: 'node_exporter'
+    scrape_interval: 5s
+    scrape_timeout: 4s
+    static_configs:
+    - targets: ['localhost:9100']
