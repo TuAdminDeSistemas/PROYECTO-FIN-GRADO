@@ -1,0 +1,46 @@
+- name: Instalar y configurar Kubernetes y Minikube, crear imagenes personalizadas, montarlas, aplicarlas al script yaml para la creacion de los pods
+  hosts: localhost
+  gather_facts: false
+  become: true
+
+  tasks:
+    - name: Actualizar paquetes
+      apt:
+        update_cache: yes
+
+    - name: Instalar Docker
+      apt:
+        name: docker.io
+        state: present
+
+    - name: Habilitar servicio Docker
+      systemd:
+        name: docker
+        enabled: yes
+
+    - name: Instalar curl
+      apt:
+        name: curl
+        state: present
+
+    - name: Descargar kubectl
+      shell: curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+
+    - name: Descargar Minikube
+      shell: curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 && sudo install minikube-linux-amd64 /usr/local/bin/minikube
+
+    - name: Desactivar protección de archivos regulares
+      sysctl:
+        name: fs.protected_regular
+        value: 0
+        sysctl_set: yes
+        state: present
+
+    - name: Dar permisos a la carpeta tmp
+      shell: chmod 777 /tmp/*
+
+    - name: Iniciar Minikube con Calico
+      shell: minikube start --force --driver=docker --network-plugin=cni --cni=calico
+
+    - name: Ejecutar deployments
+      shell: kubectl apply -k ./
